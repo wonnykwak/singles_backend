@@ -2,7 +2,7 @@ import sqlite3
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='public')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 db = SQLAlchemy(app)
 
@@ -14,6 +14,7 @@ def create_connection(db_file):
         print(e)
  
     return None
+    
 def create_table(conn, create_table_sql, add_values_sql):
     try:
         c = conn.cursor()
