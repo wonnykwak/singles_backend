@@ -1,5 +1,6 @@
 import sqlite3
-from flask import Flask, g
+import json
+from flask import Flask, g, request
 from contextlib import closing
 
 app = Flask(__name__, static_folder='public')
@@ -21,7 +22,18 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-def main():
+@app.route("/api/moves", methods=["post"])
+def logMove():
+    with get_cur() as c:
+        data = request.json
+        c.execute( "INSERT INTO moves (id, move, type, advice) VALUES ({id}, {move}, '{type}', '{advice}')".format(**data) )
+
+        get_db().commit()
+
+        return "", 200
+
+@app.route("/api/reset")
+def reset():
     sql_delete_moves_table = """ DROP TABLE IF EXISTS moves """
     sql_create_moves_table = """ CREATE TABLE IF NOT EXISTS moves (
                                     id INTEGER NOT NULL,
@@ -30,45 +42,21 @@ def main():
                                     advice TEXT,
                                     PRIMARY KEY (id, move)
                                 ); """
-
-    sql_add_move = ''' INSERT INTO moves (id, move, type, advice)
-                           VALUES (21, 21, 'dont put it next to the 2', 'next to 2');'''
-
-    with app.app_context():
-        with get_cur() as c:
-            c.execute(sql_delete_moves_table)
-            c.execute(sql_create_moves_table)
-
-@app.route("/api/saveMove")
-def saveMove():
     with get_cur() as c:
-        data = {
-            "id": 0,
-            "move": 0,
-            "type": "good",
-            "advice": "bad"
-        }
+        c.execute(sql_delete_moves_table)
+        c.execute(sql_create_moves_table)
 
-        c.execute( "INSERT INTO moves (id, move, type, advice) VALUES ({id}, {move}, '{type}', '{advice}')".format(**data) )
-
-        get_db().commit()
-
-        return "", 200
-
-
-@app.route("/api/readMove")
-def readMove():
+@app.route("/api/moves", methods=["get"])
+def readMoves():
     with get_cur() as c:
-        array = c.execute("SELECT * FROM moves").fetchall()
-        for row in array:
-            print(row)
+        rows = c.execute("SELECT * FROM moves").fetchall()
+        return json.dumps(rows)
 
-        return "Welcome to my world"
+@app.route("/api/moves/<int:id>", methods=["get"])
+def readMovesForId(id):
+    with get_cur() as c:
+        rows = c.execute(f"SELECT * FROM moves WHERE id={id}").fetchall()
+        return json.dumps(rows)
 
-if __name__ == '__main__':
-    try:
-        main()
-    except Exception as e:
-        print(e)
-    
+if __name__ == '__main__':    
     app.run(debug=True, host="0.0.0.0", port=4000)
