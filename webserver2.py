@@ -26,7 +26,7 @@ def close_connection(exception):
 def logMove():
     with get_cur() as c:
         data = request.json
-        c.execute( "INSERT INTO moves (id, move, type, advice) VALUES ({id}, {move}, '{type}', '{advice}')".format(**data) )
+        c.execute( "INSERT INTO moves VALUES ({id}, {move}, '{type}', '{feedback}')".format(**data) )
 
         get_db().commit()
 
@@ -39,12 +39,14 @@ def reset():
                                     id INTEGER NOT NULL,
                                     move INTEGER NOT NULL,
                                     type TEXT NOT NULL,
-                                    advice TEXT,
+                                    feedback TEXT,
                                     PRIMARY KEY (id, move)
                                 ); """
     with get_cur() as c:
         c.execute(sql_delete_moves_table)
         c.execute(sql_create_moves_table)
+
+    return ""
 
 @app.route("/api/moves", methods=["get"])
 def readMoves():
@@ -58,5 +60,5 @@ def readMovesForId(id):
         rows = c.execute(f"SELECT * FROM moves WHERE id={id}").fetchall()
         return json.dumps(rows)
 
-if __name__ == '__main__':    
+if __name__ == '__main__': 
     app.run(debug=True, host="0.0.0.0", port=4000)
